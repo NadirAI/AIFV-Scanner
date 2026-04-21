@@ -56,7 +56,7 @@ Add your own fingerprint rules and vulnerability rules at runtime via REST API �
 ### One-command Docker Deploy
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 Single 18MB Go binary with embedded frontend. Host network mode for scanning LAN targets.
@@ -68,7 +68,7 @@ Single 18MB Go binary with embedded frontend. Host network mode for scanning LAN
 ```bash
 git clone https://github.com/NadirAI/AIFV-Scanner.git
 cd AIFV-Scanner
-docker-compose up -d
+docker compose up -d
 ```
 
 Open http://localhost:8899
@@ -174,7 +174,7 @@ Web 界面和 CVE 描述均支持中英文，一键切换。
 ### 一键 Docker 部署
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 单个 18MB Go 二进制文件，前端内嵌。host 网络模式，可扫描局域网目标。
@@ -186,7 +186,7 @@ docker-compose up -d
 ```bash
 git clone https://github.com/NadirAI/AIFV-Scanner.git
 cd AIFV-Scanner
-docker-compose up -d
+docker compose up -d
 ```
 
 访问 http://localhost:8899
