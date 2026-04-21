@@ -1,0 +1,20 @@
+diff --git a/pkg/httpx/httpx.go b/pkg/httpx/httpx.go
+index f2d1b90..161ca83 100644
+--- a/pkg/httpx/httpx.go
++++ b/pkg/httpx/httpx.go
+@@ -56,8 +56,13 @@ func NewHttpx(options *HTTPOptions) (*HTTPX, error) {
+ 	}
+ 
+ 	if httpx.Options.FollowRedirects {
+-		// Follow redirects
+-		redirectFunc = nil
++		// Follow redirects up to 20 hops; return the last response on excess
++		redirectFunc = func(_ *http.Request, via []*http.Request) error {
++			if len(via) >= 20 {
++				return http.ErrUseLastResponse
++			}
++			return nil
++		}
+ 	}
+ 
+ 	transport := &http.Transport{
