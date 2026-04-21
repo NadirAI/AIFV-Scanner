@@ -23,8 +23,6 @@
 
 Think of it as a **"Built With" detector + vulnerability scanner**, purpose-built for AI infrastructure.
 
-Extracted and optimized from [AI-Infra-Guard](https://github.com/Tencent/AI-Infra-Guard) by Tencent Zhuque Lab.
-
 ## Screenshots
 
 | Scan & Detect | Infrastructure Base | Add Rules |
@@ -140,8 +138,6 @@ AI 基础设施指纹识别 | Built-With 检测 | CVE 漏洞扫描
 2. **"它有漏洞吗？"** — 将检测到的组件与 1190+ 条 CVE 规则进行版本匹配分析，支持中英文双语。
 
 可以理解为专为 AI 基础设施打造的 **"Built With 检测器 + 漏洞扫描器"**。
-
-基于腾讯朱雀实验室 [AI-Infra-Guard](https://github.com/Tencent/AI-Infra-Guard) 提取并优化。
 
 ## 界面截图
 
