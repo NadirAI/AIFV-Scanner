@@ -1,0 +1,12 @@
+info:
+  name: Chuanhugpt
+  author: AIG
+  severity: info
+  metadata:
+    product: Chuanhugpt
+    vendor: Chuanhugpt
+http:
+  - method: GET
+    path: '/'
+    matchers:
+      - body="<meta name=\"application-name\" content=\"Chuanhu Chat\">"

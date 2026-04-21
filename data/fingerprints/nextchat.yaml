@@ -1,0 +1,12 @@
+info:
+  name: nextchat
+  author: AIG
+  severity: info
+  metadata:
+    product: nextchat
+    vendor: nextchat
+http:
+  - method: GET
+    path: '/'
+    matchers:
+      - body="<title>NextChat</title>"

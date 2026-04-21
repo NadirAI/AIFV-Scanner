@@ -1,0 +1,12 @@
+info:
+  name: LobeChat
+  author: AIG
+  severity: info
+  metadata:
+    product: LobeChat
+    vendor: LobeChat
+http:
+  - method: GET
+    path: '/'
+    matchers:
+      - body="<title>LobeChat</title>"

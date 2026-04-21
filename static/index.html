@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIFV-Scanner</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --card: #1a1d27;
+  --border: #2a2d3a;
+  --text: #e4e4e7;
+  --text2: #9ca3af;
+  --accent: #6366f1;
+  --accent2: #818cf8;
+  --green: #22c55e;
+  --red: #ef4444;
+  --orange: #f59e0b;
+  --yellow: #eab308;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+.header { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); padding: 24px 32px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; }
+.header-left {}
+.header h1 { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.header h1 svg { width: 28px; height: 28px; }
+.header p { color: var(--text2); font-size: 13px; margin-top: 4px; }
+.header p a { color: var(--accent2); text-decoration: none; }
+.header p a:hover { text-decoration: underline; }
+.badge { display: inline-block; background: var(--accent); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-left: 8px; }
+.lang-switch { display: flex; gap: 4px; margin-top: 4px; }
+.lang-btn { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); color: var(--text2); padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: .2s; }
+.lang-btn:hover { background: rgba(255,255,255,.15); }
+.lang-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+.tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+.tab { padding: 10px 20px; cursor: pointer; color: var(--text2); border-bottom: 2px solid transparent; transition: all .2s; font-size: 14px; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent2); border-bottom-color: var(--accent); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.scan-box { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+.scan-box label { font-size: 13px; color: var(--text2); margin-bottom: 6px; display: block; }
+.scan-box textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 12px; font-size: 14px; resize: vertical; min-height: 100px; font-family: 'SF Mono', 'Cascadia Code', monospace; }
+.scan-box textarea:focus { outline: none; border-color: var(--accent); }
+.btn { background: var(--accent); color: #fff; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: .2s; }
+.btn:hover { background: var(--accent2); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-row { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+
+.progress-bar { width: 100%; background: var(--bg); border-radius: 8px; height: 6px; margin-top: 16px; overflow: hidden; display: none; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--green)); transition: width .3s; border-radius: 8px; }
+.progress-text { font-size: 12px; color: var(--text2); margin-top: 6px; text-align: right; }
+
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
+.stat-card .num { font-size: 28px; font-weight: 700; }
+.stat-card .label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.stat-card.critical .num { color: var(--red); }
+.stat-card.high .num { color: var(--orange); }
+.stat-card.medium .num { color: var(--yellow); }
+.stat-card.low .num { color: var(--green); }
+
+.result-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 12px; transition: .2s; }
+.result-card:hover { border-color: var(--accent); }
+.result-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.result-url { font-family: 'SF Mono', monospace; font-size: 14px; color: var(--accent2); word-break: break-all; }
+.status-badge { font-size: 11px; padding: 2px 8px; border-radius: 6px; font-weight: 600; }
+.status-2xx { background: rgba(34,197,94,.15); color: var(--green); }
+.status-4xx { background: rgba(239,68,68,.15); color: var(--red); }
+.status-other { background: rgba(245,158,11,.15); color: var(--orange); }
+.fp-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.fp-tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(99,102,241,.1); border: 1px solid rgba(99,102,241,.3); padding: 4px 12px; border-radius: 20px; font-size: 13px; }
+.fp-tag img { width: 18px; height: 18px; border-radius: 3px; }
+.fp-tag .ver { color: var(--text2); font-size: 11px; }
+.vul-item { background: var(--bg); border-radius: 8px; padding: 12px; margin-top: 8px; border-left: 3px solid var(--red); }
+.vul-item.medium { border-left-color: var(--orange); }
+.vul-item.low { border-left-color: var(--yellow); }
+.vul-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.vul-cve { font-weight: 600; font-size: 13px; }
+.sev-badge { font-size: 10px; padding: 1px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
+.sev-critical { background: rgba(239,68,68,.2); color: var(--red); }
+.sev-high { background: rgba(239,68,68,.15); color: #f87171; }
+.sev-medium { background: rgba(245,158,11,.15); color: var(--orange); }
+.sev-low { background: rgba(234,179,8,.15); color: var(--yellow); }
+.vul-summary { font-size: 13px; color: var(--text2); line-height: 1.5; }
+.vul-advise { font-size: 12px; color: var(--green); margin-top: 6px; }
+
+.kb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.kb-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: flex; align-items: center; gap: 12px; }
+.kb-card img { width: 36px; height: 36px; border-radius: 6px; }
+.kb-icon-placeholder { width: 36px; height: 36px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: #fff; flex-shrink: 0; }
+.kb-card .info { flex: 1; min-width: 0; }
+.kb-card .name { font-weight: 600; font-size: 14px; }
+.kb-card .desc { font-size: 12px; color: var(--text2); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kb-card .vul-count { font-size: 11px; background: rgba(239,68,68,.1); color: var(--red); padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+
+.mgmt-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+.mgmt-section h3 { margin-bottom: 12px; font-size: 15px; }
+.mgmt-section textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 12px; font-family: 'SF Mono', monospace; font-size: 12px; min-height: 200px; resize: vertical; }
+.mgmt-section textarea:focus { outline: none; border-color: var(--accent); }
+.msg { margin-top: 8px; font-size: 13px; padding: 8px 12px; border-radius: 6px; }
+.msg.ok { background: rgba(34,197,94,.1); color: var(--green); }
+.msg.err { background: rgba(239,68,68,.1); color: var(--red); }
+
+.empty { text-align: center; padding: 60px 20px; color: var(--text2); }
+
+@media (max-width: 768px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .container { padding: 16px; }
+  .header { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      AIFV-Scanner
+      <span class="badge" id="fpCount">loading...</span>
+    </h1>
+    <p id="subtitle">AI Infrastructure Fingerprint &amp; Vulnerability Scanner &mdash; Optimized by <a href="https://github.com/NadirAI" target="_blank">NadirAI</a></p>
+  </div>
+  <div class="lang-switch">
+    <button class="lang-btn active" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" onclick="setLang('zh')">中文</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <div class="tab active" data-tab="scan" id="tabScan">Scan</div>
+    <div class="tab" data-tab="kb" id="tabKb">Infrastructure Base</div>
+    <div class="tab" data-tab="mgmt" id="tabMgmt">Management</div>
+  </div>
+
+  <!-- Scan Tab -->
+  <div class="tab-content active" id="tab-scan">
+    <div class="scan-box">
+      <label id="labelTargets">Targets (one per line &mdash; IP, IP:PORT, URL, CIDR)</label>
+      <textarea id="targets" placeholder="http://192.168.1.100:11434&#10;10.0.0.1:7860&#10;https://my-dify.example.com"></textarea>
+      <div class="btn-row">
+        <span id="scanTip" style="font-size:12px;color:var(--text2)"></span>
+        <button class="btn" id="scanBtn" onclick="startScan()">Start Scan</button>
+      </div>
+      <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-text" id="progressText"></div>
+    </div>
+
+    <div id="statsRow" class="stats" style="margin-top:20px;display:none">
+      <div class="stat-card"><div class="num" id="statTargets">0</div><div class="label" id="labelStatTargets">Targets</div></div>
+      <div class="stat-card critical"><div class="num" id="statCritical">0</div><div class="label" id="labelStatCritical">Critical / High</div></div>
+      <div class="stat-card medium"><div class="num" id="statMedium">0</div><div class="label" id="labelStatMedium">Medium</div></div>
+      <div class="stat-card low"><div class="num" id="statLow">0</div><div class="label" id="labelStatLow">Low / Info</div></div>
+    </div>
+
+    <div id="results"></div>
+  </div>
+
+  <!-- Infrastructure Base Tab -->
+  <div class="tab-content" id="tab-kb">
+    <div id="kbLoading" class="empty">Loading...</div>
+    <div id="kbGrid" class="kb-grid"></div>
+  </div>
+
+  <!-- Management Tab -->
+  <div class="tab-content" id="tab-mgmt">
+    <div class="mgmt-section">
+      <h3 id="mgmtFpTitle">Add Fingerprint Rule (YAML)</h3>
+      <textarea id="fpYaml" placeholder="info:
+  name: my-framework
+  author: your-name
+  severity: info
+  metadata:
+    product: my-framework
+    vendor: vendor-name
+http:
+  - method: GET
+    path: '/'
+    matchers:
+      - body=&quot;my-framework&quot;"></textarea>
+      <div class="btn-row">
+        <span></span>
+        <button class="btn" id="btnAddFp" onclick="addFingerprint()">Add Fingerprint</button>
+      </div>
+      <div id="fpMsg"></div>
+    </div>
+
+    <div class="mgmt-section">
+      <h3 id="mgmtVulTitle">Add Vulnerability Rule (YAML)</h3>
+      <textarea id="vulYaml" placeholder="info:
+  name: my-framework
+  cve: CVE-2024-XXXXX
+  summary: Vulnerability title
+  details: |
+    Description...
+  severity: HIGH
+  security_advise: Upgrade to latest
+rule: version &lt;= &quot;1.0.0&quot;
+references:
+  - https://nvd.nist.gov/vuln/detail/CVE-2024-XXXXX"></textarea>
+      <div class="btn-row">
+        <span></span>
+        <button class="btn" id="btnAddVul" onclick="addVulnerability()">Add Vulnerability</button>
+      </div>
+      <div id="vulMsg"></div>
+    </div>
+
+    <div class="mgmt-section">
+      <h3>REST API</h3>
+      <div style="font-size:13px;color:var(--text2);line-height:2.2">
+        <code style="color:var(--green)">POST</code> <code>/api/v1/scan</code> &mdash; <span data-i18n="apiScan">Start scan</span>, body: <code>{"targets":["..."]}</code><br>
+        <code style="color:var(--accent2)">GET</code> <code>/api/v1/scan/:id</code> &mdash; <span data-i18n="apiResult">Get task result</span><br>
+        <code style="color:var(--accent2)">GET</code> <code>/api/v1/scan/:id/stream</code> &mdash; <span data-i18n="apiStream">SSE real-time progress</span><br>
+        <code style="color:var(--accent2)">GET</code> <code>/api/v1/summary</code> &mdash; <span data-i18n="apiSummary">Component + CVE summary</span><br>
+        <code style="color:var(--accent2)">GET</code> <code>/api/v1/fingerprints</code> &mdash; <span data-i18n="apiFpList">List fingerprint rules</span><br>
+        <code style="color:var(--accent2)">GET</code> <code>/api/v1/vulnerabilities?name=xxx</code> &mdash; <span data-i18n="apiVulList">List vulnerability rules</span><br>
+        <code style="color:var(--green)">POST</code> <code>/api/v1/fingerprints</code> &mdash; <span data-i18n="apiFpAdd">Add fingerprint (YAML body)</span><br>
+        <code style="color:var(--red)">DELETE</code> <code>/api/v1/fingerprints/:name</code> &mdash; <span data-i18n="apiFpDel">Delete fingerprint</span><br>
+        <code style="color:var(--green)">POST</code> <code>/api/v1/vulnerabilities</code> &mdash; <span data-i18n="apiVulAdd">Add vulnerability (YAML body)</span><br>
+        <code style="color:var(--red)">DELETE</code> <code>/api/v1/vulnerabilities/:name/:cve</code> &mdash; <span data-i18n="apiVulDel">Delete vulnerability</span><br>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- i18n ----
+const I18N = {
+  en: {
+    subtitle: 'AI Infrastructure Fingerprint & Vulnerability Scanner \u2014 Optimized by <a href="https://github.com/NadirAI" target="_blank">NadirAI</a>',
+    tabScan: 'Scan',
+    tabKb: 'Infrastructure Base',
+    tabMgmt: 'Management',
+    labelTargets: 'Targets (one per line \u2014 IP, IP:PORT, URL, CIDR)',
+    scanBtn: 'Start Scan',
+    scanBtnRunning: 'Scanning...',
+    scanDone: 'Scan completed',
+    labelStatTargets: 'Targets',
+    labelStatCritical: 'Critical / High',
+    labelStatMedium: 'Medium',
+    labelStatLow: 'Low / Info',
+    mgmtFpTitle: 'Add Fingerprint Rule (YAML)',
+    mgmtVulTitle: 'Add Vulnerability Rule (YAML)',
+    btnAddFp: 'Add Fingerprint',
+    btnAddVul: 'Add Vulnerability',
+    kbLoading: 'Loading...',
+    errPrefix: 'Error: ',
+    fixPrefix: 'Fix: ',
+    apiScan: 'Start scan',
+    apiResult: 'Get task result',
+    apiStream: 'SSE real-time progress',
+    apiSummary: 'Component + CVE summary',
+    apiFpList: 'List fingerprint rules',
+    apiVulList: 'List vulnerability rules',
+    apiFpAdd: 'Add fingerprint (YAML body)',
+    apiFpDel: 'Delete fingerprint',
+    apiVulAdd: 'Add vulnerability (YAML body)',
+    apiVulDel: 'Delete vulnerability',
+  },
+  zh: {
+    subtitle: 'AI\u57fa\u7840\u8bbe\u65bd\u6307\u7eb9\u8bc6\u522b\u4e0e\u6f0f\u6d1e\u626b\u63cf\u5668 \u2014 Optimized by <a href="https://github.com/NadirAI" target="_blank">NadirAI</a>',
+    tabScan: '\u626b\u63cf',
+    tabKb: '\u57fa\u7840\u8bbe\u65bd\u5e93',
+    tabMgmt: '\u7ba1\u7406',
+    labelTargets: '\u76ee\u6807\u5730\u5740\uff08\u6bcf\u884c\u4e00\u4e2a \u2014 IP\u3001IP:\u7aef\u53e3\u3001URL\u3001CIDR\uff09',
+    scanBtn: '\u5f00\u59cb\u626b\u63cf',
+    scanBtnRunning: '\u626b\u63cf\u4e2d...',
+    scanDone: '\u626b\u63cf\u5b8c\u6210',
+    labelStatTargets: '\u76ee\u6807\u6570',
+    labelStatCritical: '\u4e25\u91cd / \u9ad8\u5371',
+    labelStatMedium: '\u4e2d\u5371',
+    labelStatLow: '\u4f4e\u5371 / \u4fe1\u606f',
+    mgmtFpTitle: '\u6dfb\u52a0\u6307\u7eb9\u89c4\u5219 (YAML)',
+    mgmtVulTitle: '\u6dfb\u52a0\u6f0f\u6d1e\u89c4\u5219 (YAML)',
+    btnAddFp: '\u6dfb\u52a0\u6307\u7eb9',
+    btnAddVul: '\u6dfb\u52a0\u6f0f\u6d1e',
+    kbLoading: '\u52a0\u8f7d\u4e2d...',
+    errPrefix: '\u9519\u8bef: ',
+    fixPrefix: '\u4fee\u590d\u5efa\u8bae: ',
+    apiScan: '\u53d1\u8d77\u626b\u63cf',
+    apiResult: '\u83b7\u53d6\u4efb\u52a1\u7ed3\u679c',
+    apiStream: 'SSE \u5b9e\u65f6\u8fdb\u5ea6',
+    apiSummary: '\u7ec4\u4ef6 + CVE \u6982\u89c8',
+    apiFpList: '\u5217\u51fa\u6307\u7eb9\u89c4\u5219',
+    apiVulList: '\u5217\u51fa\u6f0f\u6d1e\u89c4\u5219',
+    apiFpAdd: '\u6dfb\u52a0\u6307\u7eb9\uff08YAML body\uff09',
+    apiFpDel: '\u5220\u9664\u6307\u7eb9',
+    apiVulAdd: '\u6dfb\u52a0\u6f0f\u6d1e\uff08YAML body\uff09',
+    apiVulDel: '\u5220\u9664\u6f0f\u6d1e',
+  }
+};
+
+let lang = localStorage.getItem('aifv-lang') || 'en';
+
+function setLang(l) {
+  lang = l;
+  localStorage.setItem('aifv-lang', l);
+  applyLang();
+}
+
+function t(key) { return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key; }
+
+function applyLang() {
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('active', (b.textContent.trim() === 'EN' && lang === 'en') || (b.textContent.trim() === '\u4e2d\u6587' && lang === 'zh'));
+  });
+  document.getElementById('subtitle').innerHTML = t('subtitle');
+  document.getElementById('tabScan').textContent = t('tabScan');
+  document.getElementById('tabKb').textContent = t('tabKb');
+  document.getElementById('tabMgmt').textContent = t('tabMgmt');
+  document.getElementById('labelTargets').textContent = t('labelTargets');
+  if (!scanning) document.getElementById('scanBtn').textContent = t('scanBtn');
+  document.getElementById('labelStatTargets').textContent = t('labelStatTargets');
+  document.getElementById('labelStatCritical').textContent = t('labelStatCritical');
+  document.getElementById('labelStatMedium').textContent = t('labelStatMedium');
+  document.getElementById('labelStatLow').textContent = t('labelStatLow');
+  document.getElementById('mgmtFpTitle').textContent = t('mgmtFpTitle');
+  document.getElementById('mgmtVulTitle').textContent = t('mgmtVulTitle');
+  document.getElementById('btnAddFp').textContent = t('btnAddFp');
+  document.getElementById('btnAddVul').textContent = t('btnAddVul');
+  document.getElementById('kbLoading').textContent = t('kbLoading');
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+}
+
+// ---- Icons ----
+const ICONS = {
+  'ollama':'https://ollama.com/public/ollama.png',
+  'dify':'https://cdn.jsdelivr.net/gh/langgenius/dify@main/web/public/favicon.ico',
+  'gradio':'https://cdn.jsdelivr.net/gh/gradio-app/gradio@main/guides/assets/logo.png',
+  'vllm':'https://raw.githubusercontent.com/vllm-project/vllm/main/docs/source/assets/logos/vllm-logo-only-light.png',
+  'comfyui':'https://raw.githubusercontent.com/comfyanonymous/ComfyUI/master/web/assets/favicon.ico',
+  'langflow':'https://raw.githubusercontent.com/langflow-ai/langflow/main/src/frontend/public/favicon.ico',
+  'flowise':'https://raw.githubusercontent.com/FlowiseAI/Flowise/main/packages/ui/public/favicon.ico',
+  'mlflow':'https://raw.githubusercontent.com/mlflow/mlflow/master/assets/icon.svg',
+  'ray':'https://avatars.githubusercontent.com/u/22125274?s=48',
+  'triton':'https://developer.nvidia.com/favicon.ico',
+  'nvidia-nim':'https://developer.nvidia.com/favicon.ico',
+  'tensorboard':'https://avatars.githubusercontent.com/u/15658638?s=48',
+  'jupyter-notebook':'https://jupyter.org/assets/favicons/apple-touch-icon-152x152.png',
+  'jupyter-lab':'https://jupyter.org/assets/favicons/apple-touch-icon-152x152.png',
+  'jupyter-server':'https://jupyter.org/assets/favicons/apple-touch-icon-152x152.png',
+  'openwebui':'https://avatars.githubusercontent.com/u/158137808?s=48',
+  'lobechat':'https://avatars.githubusercontent.com/u/131470832?s=48',
+  'n8n.io':'https://avatars.githubusercontent.com/u/45487711?s=48',
+  'langfuse':'https://avatars.githubusercontent.com/u/133482200?s=48',
+  'litellm':'https://avatars.githubusercontent.com/u/29436595?s=48',
+  'bentoml':'https://avatars.githubusercontent.com/u/49176046?s=48',
+  'kubeflow':'https://avatars.githubusercontent.com/u/33164907?s=48',
+  'fastchat':'https://avatars.githubusercontent.com/u/128686189?s=48',
+  'anythingllm':'https://avatars.githubusercontent.com/u/132844914?s=48',
+  'ragflow':'https://avatars.githubusercontent.com/u/12089907?s=48',
+  'localai':'https://avatars.githubusercontent.com/u/139863280?s=48',
+  'xinference':'https://avatars.githubusercontent.com/u/21116482?s=48',
+  'clickhouse':'https://avatars.githubusercontent.com/u/54801242?s=48',
+  'librechat':'https://avatars.githubusercontent.com/u/125550571?s=48',
+  'nextchat':'https://avatars.githubusercontent.com/u/140987948?s=48',
+  'llama-cpp':'https://avatars.githubusercontent.com/u/142420747?s=48',
+  'llama-factory':'https://avatars.githubusercontent.com/u/105827828?s=48',
+  'marimo':'https://avatars.githubusercontent.com/u/140994891?s=48',
+  'kubepi':'https://avatars.githubusercontent.com/u/24504108?s=48',
+  'feast':'https://avatars.githubusercontent.com/u/64010709?s=48',
+  'dask':'https://avatars.githubusercontent.com/u/17131925?s=48',
+  'praisonai':'https://avatars.githubusercontent.com/u/154789956?s=48',
+  'huggingface-tgi':'https://avatars.githubusercontent.com/u/25720743?s=48',
+  'text-generation-webui':'https://avatars.githubusercontent.com/u/112222186?s=48',
+  'chuanhugpt':'https://avatars.githubusercontent.com/u/142378028?s=48',
+  'sim':'https://avatars.githubusercontent.com/u/141386?s=48',
+};
+
+function hc(s){let h=0;for(let i=0;i<s.length;i++)h=s.charCodeAt(i)+((h<<5)-h);const c=['#6366f1','#ec4899','#14b8a6','#f59e0b','#8b5cf6','#06b6d4','#ef4444','#22c55e'];return c[Math.abs(h)%c.length]}
+function iconSmall(name){const k=name.toLowerCase();if(ICONS[k])return`<img src="${ICONS[k]}" style="width:18px;height:18px;border-radius:3px" onerror="this.outerHTML=phSmall('${esc(name)}')" alt="">`;return phSmall(name)}
+function phSmall(n){return`<span style="width:18px;height:18px;border-radius:3px;background:${hc(n)};display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">${n.charAt(0).toUpperCase()}</span>`}
+function iconLarge(name){const k=name.toLowerCase();if(ICONS[k])return`<img src="${ICONS[k]}" style="width:36px;height:36px;border-radius:6px" onerror="this.outerHTML=phLarge('${esc(name)}')" alt="">`;return phLarge(name)}
+function phLarge(n){return`<span class="kb-icon-placeholder" style="background:${hc(n)}">${n.charAt(0).toUpperCase()}</span>`}
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+
+// ---- Tabs ----
+document.querySelectorAll('.tab').forEach(tb=>tb.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
+  tb.classList.add('active');document.getElementById('tab-'+tb.dataset.tab).classList.add('active');
+  if(tb.dataset.tab==='kb')loadKB();
+}));
+
+// ---- Scan ----
+let scanning=false;
+function startScan(){
+  if(scanning)return;
+  const raw=document.getElementById('targets').value.trim();
+  if(!raw)return;
+  const targets=raw.split('\n').map(s=>s.trim()).filter(Boolean);
+  scanning=true;
+  const btn=document.getElementById('scanBtn');
+  btn.disabled=true;btn.textContent=t('scanBtnRunning');
+  document.getElementById('results').innerHTML='';
+  document.getElementById('progressBar').style.display='block';
+  document.getElementById('progressFill').style.width='0%';
+  document.getElementById('progressText').textContent='';
+  document.getElementById('statsRow').style.display='none';
+  const stats={targets:targets.length,critical:0,medium:0,low:0};
+
+  fetch('/api/v1/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({targets, language: lang})})
+  .then(r=>r.json()).then(data=>{
+    const es=new EventSource('/api/v1/scan/'+data.task_id+'/stream');
+    es.addEventListener('progress',e=>{
+      const p=JSON.parse(e.data);
+      const pct=p.total>0?Math.round(p.current/p.total*100):0;
+      document.getElementById('progressFill').style.width=pct+'%';
+      document.getElementById('progressText').textContent=p.current+' / '+p.total+' ('+pct+'%)';
+    });
+    es.addEventListener('result',e=>{
+      const r=JSON.parse(e.data);
+      (r.vulnerabilities||[]).forEach(v=>{
+        const s=(v.severity||'').toLowerCase();
+        if(s==='critical'||s==='high')stats.critical++;
+        else if(s==='medium')stats.medium++;
+        else stats.low++;
+      });
+      updateStats(stats);
+      document.getElementById('results').appendChild(renderResult(r));
+    });
+    es.addEventListener('done',()=>{es.close();scanDone()});
+    es.onerror=()=>{es.close();scanDone()};
+  });
+}
+function scanDone(){scanning=false;const b=document.getElementById('scanBtn');b.disabled=false;b.textContent=t('scanBtn');document.getElementById('progressText').textContent=t('scanDone');}
+function updateStats(s){
+  document.getElementById('statsRow').style.display='grid';
+  document.getElementById('statTargets').textContent=s.targets;
+  document.getElementById('statCritical').textContent=s.critical;
+  document.getElementById('statMedium').textContent=s.medium;
+  document.getElementById('statLow').textContent=s.low;
+}
+function renderResult(r){
+  const div=document.createElement('div');div.className='result-card';
+  let sc='status-other';
+  if(r.status_code>=200&&r.status_code<300)sc='status-2xx';
+  else if(r.status_code>=400)sc='status-4xx';
+  let fpH='';
+  if(r.fingerprints&&r.fingerprints.length){
+    fpH='<div class="fp-list">'+r.fingerprints.map(f=>{
+      let l=f.name;if(f.version)l+=' <span class="ver">'+esc(f.version)+'</span>';
+      return'<span class="fp-tag">'+iconSmall(f.name)+' '+l+'</span>';
+    }).join('')+'</div>';
+  }
+  let vH='';
+  if(r.vulnerabilities&&r.vulnerabilities.length){
+    vH=r.vulnerabilities.map(v=>{
+      const s=(v.severity||'').toLowerCase();
+      let sc='sev-low',ic='low';
+      if(s==='critical'){sc='sev-critical';ic=''}
+      else if(s==='high'){sc='sev-high';ic=''}
+      else if(s==='medium'){sc='sev-medium';ic='medium'}
+      const adv=v.security_advise?'<div class="vul-advise">'+t('fixPrefix')+esc(v.security_advise)+'</div>':'';
+      return'<div class="vul-item '+ic+'"><div class="vul-header"><span class="vul-cve">'+esc(v.cve)+'</span><span class="sev-badge '+sc+'">'+esc(v.severity)+'</span></div><div class="vul-summary">'+esc(v.summary)+'</div>'+adv+'</div>';
+    }).join('');
+  }
+  div.innerHTML=`<div class="result-header"><span class="result-url">${esc(r.target_url)}</span>${r.status_code?`<span class="status-badge ${sc}">${r.status_code}</span>`:''}${r.title?`<span style="color:var(--text2);font-size:13px">${esc(r.title)}</span>`:''}${r.response_time?`<span style="color:var(--text2);font-size:11px">${r.response_time}</span>`:''}</div>${fpH}${vH}${r.error?`<div style="color:var(--red);font-size:13px">${t('errPrefix')}${esc(r.error)}</div>`:''}`;
+  return div;
+}
+
+// ---- Infrastructure Base ----
+function loadKB(){
+  fetch('/api/v1/summary').then(r=>r.json()).then(data=>{
+    document.getElementById('kbLoading').style.display='none';
+    const g=document.getElementById('kbGrid');g.innerHTML='';
+    (data.components||[]).forEach(c=>{
+      const d=document.createElement('div');d.className='kb-card';
+      d.innerHTML=iconLarge(c.name)+'<div class="info"><div class="name">'+esc(c.name)+'</div><div class="desc">'+esc(c.desc||'')+'</div></div>'+(c.vul_count>0?'<span class="vul-count">'+c.vul_count+' CVEs</span>':'');
+      g.appendChild(d);
+    });
+  });
+}
+
+// ---- Init ----
+fetch('/api/v1/summary').then(r=>r.json()).then(d=>{
+  document.getElementById('fpCount').textContent=d.total_components+' components / '+d.total_vulnerabilities+' CVEs';
+});
+applyLang();
+
+// ---- Management ----
+function addFingerprint(){
+  fetch('/api/v1/fingerprints',{method:'POST',body:document.getElementById('fpYaml').value})
+  .then(r=>r.json()).then(d=>showMsg('fpMsg',d.error||('Added: '+d.name),!d.error));
+}
+function addVulnerability(){
+  fetch('/api/v1/vulnerabilities',{method:'POST',body:document.getElementById('vulYaml').value})
+  .then(r=>r.json()).then(d=>showMsg('vulMsg',d.error||('Added: '+d.cve+' ('+d.component+')'),!d.error));
+}
+function showMsg(id,txt,ok){const e=document.getElementById(id);e.className='msg '+(ok?'ok':'err');e.textContent=txt}
+</script>
+</body>
+</html>

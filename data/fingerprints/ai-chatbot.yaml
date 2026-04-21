@@ -1,0 +1,12 @@
+info:
+  name: ai-chatbot
+  author: AIG
+  severity: info
+  metadata:
+    product: vercel
+    vendor: ai-chatbot
+http:
+  - method: GET
+    path: '/'
+    matchers:
+      - body="<title>Next.js Chatbot Template</title>"

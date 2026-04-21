@@ -1,0 +1,12 @@
+info:
+  name: simstudioai
+  author: AIG
+  severity: info
+  metadata:
+    product: simstudioai
+    vendor: simstudioai
+http:
+  - method: GET
+    path: '/'
+    matchers:
+      - body="Sim is an open-source AI agent workflow builder"

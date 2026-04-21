@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  ai-vuln-scanner:
+    build:
+      context: ..
+      dockerfile: ai-vuln-scanner/Dockerfile
+    container_name: ai-vuln-scanner
+    network_mode: host
+    volumes:
+      - ./data/fingerprints:/app/data/fingerprints
+      - ./data/vuln:/app/data/vuln
+      - ./data/vuln_en:/app/data/vuln_en
+    environment:
+      - FP_DIR=/app/data/fingerprints
+      - VUL_DIR=/app/data/vuln
+      - VUL_DIR_EN=/app/data/vuln_en
+      - LISTEN_ADDR=:8899
+    restart: unless-stopped
