@@ -73,17 +73,6 @@ docker-compose up -d
 
 Open http://localhost:8899
 
-### Build from Source
-
-Requires Go 1.23+ and the [AI-Infra-Guard](https://github.com/Tencent/AI-Infra-Guard) parent module:
-
-```bash
-git clone https://github.com/Tencent/AI-Infra-Guard.git
-cd AI-Infra-Guard/ai-vuln-scanner
-CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o aifv-scanner .
-./aifv-scanner
-```
-
 ## Use Cases
 
 | Scenario | How |
@@ -201,17 +190,6 @@ docker-compose up -d
 ```
 
 访问 http://localhost:8899
-
-### 源码编译
-
-需要 Go 1.23+ 以及 [AI-Infra-Guard](https://github.com/Tencent/AI-Infra-Guard) 父模块：
-
-```bash
-git clone https://github.com/Tencent/AI-Infra-Guard.git
-cd AI-Infra-Guard/ai-vuln-scanner
-CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o aifv-scanner .
-./aifv-scanner
-```
 
 ## 使用场景
 
