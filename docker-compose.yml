@@ -1,10 +1,8 @@
-version: '3.8'
-
 services:
   ai-vuln-scanner:
     build:
-      context: ..
-      dockerfile: ai-vuln-scanner/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     container_name: ai-vuln-scanner
     network_mode: host
     volumes:

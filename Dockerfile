@@ -1,19 +1,18 @@
 # Build stage
 FROM golang:1.23-alpine AS builder
+RUN apk --no-cache add git
 WORKDIR /build
 
-# Copy the parent module (AI-Infra-Guard) since we reference it via replace directive
-COPY go.mod go.sum ./
-COPY cmd/ cmd/
-COPY common/ common/
-COPY internal/ internal/
-COPY pkg/ pkg/
+# Clone parent module (AI-Infra-Guard) which provides shared Go packages
+ARG AIG_VERSION=v4.1.4
+RUN git clone --depth 1 --branch ${AIG_VERSION} https://github.com/Tencent/AI-Infra-Guard.git
 
-# Copy the sub-project
-COPY ai-vuln-scanner/ ai-vuln-scanner/
+# Copy the sub-project into the cloned repo tree so the replace directive works
+COPY go.mod go.sum main.go AI-Infra-Guard/ai-vuln-scanner/
+COPY static/ AI-Infra-Guard/ai-vuln-scanner/static/
 
 # Build
-WORKDIR /build/ai-vuln-scanner
+WORKDIR /build/AI-Infra-Guard/ai-vuln-scanner
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o /ai-vuln-scanner .
 
 # Runtime stage
@@ -23,9 +22,9 @@ ENV TZ=Asia/Shanghai
 
 WORKDIR /app
 COPY --from=builder /ai-vuln-scanner /app/ai-vuln-scanner
-COPY ai-vuln-scanner/data/fingerprints /app/data/fingerprints
-COPY ai-vuln-scanner/data/vuln /app/data/vuln
-COPY ai-vuln-scanner/data/vuln_en /app/data/vuln_en
+COPY data/fingerprints /app/data/fingerprints
+COPY data/vuln /app/data/vuln
+COPY data/vuln_en /app/data/vuln_en
 
 ENV FP_DIR=/app/data/fingerprints
 ENV VUL_DIR=/app/data/vuln
