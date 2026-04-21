@@ -1,20 +1,50 @@
 diff --git a/pkg/httpx/httpx.go b/pkg/httpx/httpx.go
-index f2d1b90..161ca83 100644
+index f2d1b90..2b02004 100644
 --- a/pkg/httpx/httpx.go
 +++ b/pkg/httpx/httpx.go
-@@ -56,8 +56,13 @@ func NewHttpx(options *HTTPOptions) (*HTTPX, error) {
+@@ -22,6 +22,7 @@ package httpx
+ import (
+ 	"crypto/tls"
+ 	"io/ioutil"
++	"net"
+ 	"net/http"
+ 	"net/url"
+ 	"regexp"
+@@ -56,8 +57,22 @@ func NewHttpx(options *HTTPOptions) (*HTTPX, error) {
  	}
  
  	if httpx.Options.FollowRedirects {
 -		// Follow redirects
 -		redirectFunc = nil
-+		// Follow redirects up to 20 hops; return the last response on excess
-+		redirectFunc = func(_ *http.Request, via []*http.Request) error {
++		// Follow redirects with safeguards:
++		// 1. Cap at 20 hops (Go default is 10)
++		// 2. Refuse cross-host redirects to localhost/loopback to avoid hanging
++		redirectFunc = func(req *http.Request, via []*http.Request) error {
 +			if len(via) >= 20 {
 +				return http.ErrUseLastResponse
++			}
++			if len(via) > 0 {
++				origHost := via[0].URL.Hostname()
++				destHost := req.URL.Hostname()
++				if origHost != destHost && isLoopback(destHost) {
++					return http.ErrUseLastResponse
++				}
 +			}
 +			return nil
 +		}
  	}
  
  	transport := &http.Transport{
+@@ -236,3 +251,12 @@ func (h *HTTPX) POST(targetUrl string, data interface{}, headers map[string]stri
+ 	}
+ 	return h.do(req)
+ }
++
++// isLoopback returns true if the host resolves to a loopback address.
++func isLoopback(host string) bool {
++	if host == "localhost" {
++		return true
++	}
++	ip := net.ParseIP(host)
++	return ip != nil && ip.IsLoopback()
++}
